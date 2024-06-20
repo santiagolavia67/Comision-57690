@@ -1,0 +1,38 @@
+[
+    {
+      "nombre": "Manzanas",
+      "tipo": "Fruta",
+      "precio": 100,
+      "cantidad": 50,
+      "unidad": "kg"
+    },
+    {
+      "nombre": "Arroz",
+      "tipo": "Grano",
+      "precio": 1000,
+      "cantidad": 1000,
+      "unidad": "g"
+    },
+    {
+      "nombre": "Leche",
+      "tipo": "Lácteo",
+      "precio": 600,
+      "cantidad": 1,
+      "unidad": "litro"
+    },
+    {
+      "nombre": "Pan integral",
+      "tipo": "Panadería",
+      "precio": 500,
+      "cantidad": 400,
+      "unidad": "g"
+    },
+    {
+      "nombre": "Yogur natural",
+      "tipo": "Lácteo",
+      "precio": 200,
+      "cantidad": 150,
+      "unidad": "g"
+    }
+  ]
+  

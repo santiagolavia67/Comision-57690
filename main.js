@@ -1,137 +1,106 @@
-const Producto = function(nombre, precio, stock) {
-    this.nombre = nombre
-    this.precio = precio
-    this.stock = stock
-}
-
-let productos = [
-    new Producto("fernet", 10000, 30),
-    new Producto("cerveza", 5000, 25),
-    new Producto("agua", 500, 10)
-];
-
-function filtrarProductos() {
-    const body = document.querySelector("body")
-    const input = document.getElementById("filtrarP").value
-    const palabraClave = input.trim().toLowerCase()
-    const resultado = productos.filter((producto) => producto.nombre.includes(palabraClave))
-
-    const existingContainer = document.getElementById("result-container")
-    if (existingContainer) {
-        existingContainer.remove();
+async function cargarProductos() {
+    try {
+        const response = await fetch('productos.json');
+        if (!response.ok) {
+            throw new Error('Error al cargar el archivo JSON');
+        }
+        const productos = await response.json();
+        console.log('Productos cargados:', productos);
+        renderizarProductos(productos);
+    } catch (error) {
+        console.error('Error durante la carga de productos:', error.message);
     }
+}
+function renderizarProductos(productos) {
+    const productosContainer = document.getElementById('productosContainer');
+    productos.forEach(producto => {
+        const productoHTML = `
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">${producto.nombre}</h5>
+                        <p class="card-text">Tipo: ${producto.tipo}</p>
+                        <p class="card-text">Precio: $${producto.precio} / ${producto.unidad}</p>
+                        <p class="card-text">Cantidad: ${producto.cantidad} ${producto.unidad}</p>
+                        <button type="button" class="btn btn-primary" onclick="mostrarDetalle('${producto.nombre}', '${producto.tipo}', ${producto.precio}, '${producto.unidad}', ${producto.cantidad})">Ver Detalle</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        productosContainer.innerHTML += productoHTML;
+    });
+}
+function mostrarDetalle(nombre, tipo, precio, unidad, cantidad) {
+    document.getElementById('nombreProductoModal').textContent = nombre;
+    document.getElementById('tipoProductoModal').textContent = `Tipo: ${tipo}`;
+    document.getElementById('precioProductoModal').textContent = `Precio: $${precio} / ${unidad}`;
+    document.getElementById('cantidadDisponibleModal').textContent = `Cantidad disponible: ${cantidad} ${unidad}`;
+    cargarCarritoDesdeLocalStorage();
 
-    if (resultado.length > 0) {
-        const container = document.createElement("div")
-        container.id = "result-container"
-
-        resultado.forEach((producto) => {
-            const card = document.createElement("div")
-
-            const nombre = document.createElement("h2")
-            nombre.textContent = producto.nombre;
-            card.appendChild(nombre)
-
-            const precio = document.createElement("p")
-            precio.innerHTML = `Precio: ${producto.precio}`
-            card.appendChild(precio);
-
-            const stock = document.createElement("p")
-            stock.innerHTML = `Stock: ${producto.stock}`
-            card.appendChild(stock)
-
-            container.appendChild(card)
-        })
-
-        body.appendChild(container)
+    $('#detalleProductoModal').modal('show');
+}
+function cargarCarritoDesdeLocalStorage() {
+    const carrito = JSON.parse(localStorage.getItem('carrito'));
+    const listaProductosCarrito = document.getElementById('listaProductosCarrito');
+    listaProductosCarrito.innerHTML = '';
+    if (carrito && carrito.length > 0) {
+        carrito.forEach(producto => {
+            const li = document.createElement('li');
+            li.classList.add('list-group-item');
+            li.textContent = `${producto.nombre} - Cantidad: ${producto.cantidad}`;
+            listaProductosCarrito.appendChild(li);
+        });
     } else {
-        showNotification("No se encontró nada", "error")
+        const li = document.createElement('li');
+        li.classList.add('list-group-item', 'text-muted');
+        li.textContent = 'No hay productos en el carrito';
+        listaProductosCarrito.appendChild(li);
     }
 }
-
-function agregarProducto() {
-    const form = document.createElement("form")
-    form.innerHTML = `
-        <label for="nombre-input">Nombre:</label>
-        <input id="nombre-input" type="text" required>
-        
-        <label for="precio-input">Precio:</label>
-        <input id="precio-input" type="number" step="0.01" required>
-        
-        <label for="stock-input">Stock:</label>
-        <input id="stock-input" type="number" step="1" required>
-        
-        <button type="submit">Agregar</button>
-    `
-
-    form.addEventListener("submit", function(event) {
-        event.preventDefault()
-
-        const nombreInput = document.getElementById("nombre-input").value.trim()
-        const precioInput = parseFloat(document.getElementById("precio-input").value.trim())
-        const stockInput = parseInt(document.getElementById("stock-input").value.trim())
-
-        if (isNaN(precioInput) || isNaN(stockInput) || nombreInput === "") {
-            showNotification("Por favor ingresa valores válidos", "error")
-            return
+function agregarAlCarrito() {
+    const inputCantidad = document.getElementById('cantidadProducto').value;
+    const producto = {
+        nombre: document.getElementById('nombreProductoModal').textContent,
+        cantidad: parseInt(inputCantidad)
+    };
+    let carrito = localStorage.getItem('carrito');
+    if (carrito) {
+        carrito = JSON.parse(carrito);
+        const indice = carrito.findIndex(item => item.nombre === producto.nombre);
+        if (indice !== -1) {
+            carrito[indice].cantidad += producto.cantidad;
+        } else {
+            carrito.push(producto);
         }
+    } else {
+        carrito = [producto];
+    }
+    localStorage.setItem('carrito', JSON.stringify(carrito));
 
-        const producto = new Producto(nombreInput, precioInput, stockInput)
-
-        if (productos.some((elemento) => elemento.nombre === producto.nombre)) {
-            showNotification("El producto ya está en la lista", "error")
-            return
-        }
-
-        productos.push(producto)
-        localStorage.setItem("x", JSON.stringify(productos));
-        showNotification("Producto agregado exitosamente", "success")
-
-        const existingContainer = document.getElementById("result-container")
-        if (existingContainer) {
-            existingContainer.remove()
-        }
-
-        const container = document.createElement("div")
-        container.id = "result-container"
-
-        productos.forEach((producto) => {
-            const card = document.createElement("div")
-
-            const nombre = document.createElement("h2")
-            nombre.textContent = producto.nombre
-            card.appendChild(nombre)
-
-            const precio = document.createElement("p")
-            precio.innerHTML = `Precio: ${producto.precio}`
-            card.appendChild(precio)
-
-            const stock = document.createElement("p")
-            stock.innerHTML = `Stock: ${producto.stock}`
-            card.appendChild(stock)
-            container.appendChild(card)
-        })
-
-        document.querySelector("body").appendChild(container)
-        form.reset()
-    })
-
-    document.querySelector("body").appendChild(form)
+    alert(`Producto agregado al carrito con cantidad: ${inputCantidad}`);
+    $('#detalleProductoModal').modal('hide');
+    cargarCarritoDesdeLocalStorage();
 }
-
-function showNotification(message, type) {
-    const notification = document.createElement("div")
-    notification.className = `notification ${type}`
-    notification.textContent = message
-
-    document.body.appendChild(notification)
-
-    setTimeout(() => {
-        notification.remove()}, 3000)
+function realizarCompra() {
+    Swal.fire({
+        icon: 'success',
+        title: '¡Compra realizada!',
+        text: '¡Gracias por tu compra! Esperamos que disfrutes de tus productos.',
+        showConfirmButton: false,
+        timer: 2000
+    });
 }
-
-let btnGuardar = document.getElementById("buscar")
-btnGuardar.addEventListener("click", filtrarProductos)
-
-let btnAgregar = document.getElementById("agregar")
-btnAgregar.addEventListener("click", agregarProducto)
+let cantidadProducto = 1;
+function sumarCantidad() {
+    const inputCantidad = document.getElementById('cantidadProducto');
+    cantidadProducto++;
+    inputCantidad.value = cantidadProducto;
+}
+function restarCantidad() {
+    const inputCantidad = document.getElementById('cantidadProducto');
+    if (cantidadProducto > 1) {
+        cantidadProducto--;
+        inputCantidad.value = cantidadProducto;
+    }
+}
+cargarProductos();
